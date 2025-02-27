@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Caccia al Tesoro Romantica Avanzata</title>
+  <!-- Font romantici -->
+  <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
+  <!-- Libreria per confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <!-- Font Awesome per icone più belle -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    /* RESET E STILI DI BASE */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; }
+    body { 
+      font-family: 'Montserrat', sans-serif; 
+      background: linear-gradient(135deg, #f6d365, #fda085); 
+      overflow: hidden; 
+      position: relative; 
+    }
+    
+    /* CANVAS PER SFONDO: CUORI FLUTTUANTI */
+    #bgCanvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; }
+    
+    /* CONTAINER PRINCIPALE */
+    .container {
+      position: relative;
+      width: 90%;
+      max-width: 800px;
+      margin: 30px auto;
+      background: rgba(255,255,255,0.97);
+      border-radius: 15px;
+      padding: 30px;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+      text-align: center;
+      overflow: hidden;
+    }
+    
+    /* SCHERMATE */
+    .screen { display: none; animation: fadeIn 1s ease forwards; }
+    .active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    
+    /* SCHERMATA DI BENVENUTO */
+    #welcomeScreen { padding: 20px; }
+    #welcomeScreen h1 {
+      font-family: 'Dancing Script', cursive;
+      font-size: 3.5em;
+      color: #d23669;
+      margin-bottom: 20px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+    }
+    #welcomeScreen p { font-size: 1.2em; color: #333; margin-bottom: 20px; line-height: 1.5; }
+    #countdownTimer { 
+      font-size: 2em; 
+      color: #d23669; 
+      margin-bottom: 20px; 
+      width: 80px;
+      height: 80px;
+      line-height: 80px;
+      border-radius: 50%;
+      background: rgba(255,220,230,0.5);
+      margin: 20px auto;
+      box-shadow: 0 0 15px rgba(210,54,105,0.3);
+    }
+    #startButton {
+      padding: 12px 30px;
+      background-color: #d23669;
+      border: none;
+      border-radius: 50px;
+      color: #fff;
+      font-size: 1.1em;
+      cursor: pointer;
+      transition: transform 0.2s ease, background-color 0.3s;
+      display: none;
+      box-shadow: 0 4px 15px rgba(210,54,105,0.4);
+    }
+    #startButton:hover { background-color: #b82456; transform: scale(1.05); }
+    
+    /* ISTRUZIONI INTEGRATE CON ICONE */
+    #welcomeInstructions {
+      margin-top: 20px;
+      padding: 15px;
+      background: rgba(210,54,105,0.1);
+      border-radius: 10px;
+    }
+    #welcomeInstructions p {
+      font-size: 1em;
+      color: #555;
+      margin: 10px 0;
+      text-align: left;
+      display: flex;
+      align-items: center;
+    }
+    #welcomeInstructions span {
+      margin-right: 12px;
+      font-size: 1.2em;
+      color: #d23669;
+      min-width: 24px;
+      text-align: center;
+    }
+    
+    /* SCHERMATA DI GIOCO */
+    #gameScreen { padding: 20px; }
+    #questionContainer { margin-bottom: 30px; }
+    #riddleText {
+      font-size: 1.2em;
+      margin-bottom: 25px;
+      color: #333;
+      line-height: 1.6;
+      padding: 15px;
+      background: rgba(210,54,105,0.05);
+      border-radius: 10px;
+      border-left: 4px solid #d23669;
+      text-align: left;
+    }
+    #answerInput {
+      width: 80%;
+      max-width: 400px;
+      padding: 12px 20px;
+      font-size: 1.1em;
+      border: 2px solid #d23669;
+      border-radius: 25px;
+      outline: none;
+      transition: border-color 0.3s, box-shadow 0.3s;
+      margin-bottom: 15px;
+    }
+    #answerInput:focus { 
+      border-color: #b82456; 
+      box-shadow: 0 0 8px rgba(210,54,105,0.4);
+    }
+    #submitAnswer {
+      padding: 12px 30px;
+      background-color: #d23669;
+      border: none;
+      border-radius: 50px;
+      color: #fff;
+      font-size: 1.1em;
+      cursor: pointer;
+      transition: transform 0.2s ease, background-color 0.3s;
+      box-shadow: 0 4px 15px rgba(210,54,105,0.4);
+    }
+    #submitAnswer:hover { background-color: #b82456; transform: scale(1.05); }
+    
+    /* PROGRESS BAR IN FONDO */
+    #progressContainer {
+      width: 100%;
+      background: #ddd;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 30px;
+      height: 25px;
+      box-shadow: inset 0 2px 5px rgba(0,0,0,0.2);
+    }
+    #progressBar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #d23669, #f36);
+      transition: width 0.6s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      color: #fff;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+    }
+    
+    /* ICONE DI PROGRESSO COME PACCHI REGALO */
+    #progressIcons {
+      margin-top: 20px;
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      font-size: 2.5em;
+    }
+    .progressIcon { 
+      position: relative;
+      width: 60px;
+      height: 60px;
+      background: #d23669;
+      border-radius: 5px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      transition: all 0.5s ease;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+      cursor: help;
+    }
+    .progressIcon:before {
+      content: "?";
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+    .progressIcon:after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 5px;
+      background: rgba(255,255,255,0.3);
+      transform: translateY(-50%);
+    }
+    .progressIcon.revealed {
+      background: #5cb85c;
+      transform: rotateY(180deg);
+    }
+    .progressIcon.revealed:before {
+      content: attr(data-content);
+      transform: rotateY(180deg);
+    }
+    .progressIcon.current {
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+    
+    /* TOOLTIP PER INDIZIO */
+    .tooltip {
+      position: absolute;
+      top: -40px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.8);
+      color: white;
+      padding: 5px 10px;
+      border-radius: 5px;
+      font-size: 0.5em;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    .progressIcon:hover .tooltip {
+      opacity: 1;
+    }
+    
+    /* SCHERMATA FINALE */
+    #finalScreen { padding: 20px; }
+    #finalScreen h1 {
+      font-family: 'Dancing Script', cursive;
+      font-size: 3.5em;
+      color: #d23669;
+      margin-bottom: 20px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+    }
+    #finalScreen p { 
+      font-size: 1.2em; 
+      margin-bottom: 20px; 
+      color: #333; 
+      line-height: 1.5;
+    }
+    #finalMessage {
+      background: rgba(210,54,105,0.1);
+      padding: 20px;
+      border-radius: 10px;
+      margin: 20px 0;
+      font-style: italic;
+    }
+    #restartButton {
+      padding: 12px 30px;
+      background-color: #d23669;
+      border: none;
+      border-radius: 50px;
+      color: #fff;
+      font-size: 1.1em;
+      cursor: pointer;
+      transition: transform 0.2s ease, background-color 0.3s;
+      box-shadow: 0 4px 15px rgba(210,54,105,0.4);
+    }
+    #restartButton:hover { background-color: #b82456; transform: scale(1.05); }
+    
+    /* FEEDBACK VISIVO E ANIMAZIONI */
+    .correct-answer-animation {
+      animation: correctAnswer 1.5s ease;
+    }
+    @keyframes correctAnswer {
+      0% { background-color: rgba(92, 184, 92, 0.1); }
+      50% { background-color: rgba(92, 184, 92, 0.3); }
+      100% { background-color: rgba(255, 255, 255, 0.97); }
+    }
+    .wrong-answer-animation {
+      animation: wrongAnswer 0.6s ease;
+    }
+    @keyframes wrongAnswer {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-10px); }
+      40%, 80% { transform: translateX(10px); }
+    }
+    
+    /* RESPONSIVITÀ */
+    @media (max-width: 600px) {
+      .container { padding: 15px; margin: 15px auto; }
+      #welcomeScreen h1, #finalScreen h1 { font-size: 2.5em; }
+      #submitAnswer, #restartButton { font-size: 1em; padding: 10px 20px; }
+      #progressIcons { gap: 20px; }
+      .progressIcon {
+        width: 50px;
+        height: 50px;
+        font-size: 1.8rem;
+      }
+    }
+    
+    /* HINT BUTTON */
+    #hintButton {
+      background: transparent;
+      border: 1px dashed #d23669;
+      color: #d23669;
+      padding: 8px 15px;
+      border-radius: 20px;
+      margin-top: 10px;
+      cursor: pointer;
+      font-size: 0.9em;
+      transition: all 0.3s ease;
+    }
+    #hintButton:hover {
+      background: rgba(210,54,105,0.1);
+    }
+    #hintText {
+      font-size: 0.95em;
+      color: #666;
+      font-style: italic;
+      margin-top: 15px;
+      display: none;
+      padding: 10px;
+      background: rgba(255,255,255,0.7);
+      border-radius: 8px;
+    }
+
+    /* MESSAGGIO DI COMPLIMENTO */
+    #complimentMessage {
+      display: none;
+      margin: 15px auto;
+      padding: 15px;
+      background: rgba(92, 184, 92, 0.2);
+      border-radius: 10px;
+      color: #2c6e2c;
+      font-weight: 600;
+      font-size: 1.1em;
+      border-left: 4px solid #5cb85c;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <!-- CANVAS PER SFONDO: CUORI FLUTTUANTI -->
+  <canvas id="bgCanvas"></canvas>
+  
+  <div class="container">
+    <!-- SCHERMATA DI BENVENUTO -->
+    <div id="welcomeScreen" class="screen active">
+      <h1>Ciao Amore bello!</h1>
+      <p>Benvenuta in questa fantastica caccia al tesoro digitale.<br>Ti ho preparato alcuni indovinelli che metteranno alla prova la tua mente (più o meno) brillante.</p>
+      <!-- Istruzioni integrate con icone -->
+      <div id="welcomeInstructions">
+        <p><span><i class="fas fa-puzzle-piece"></i></span> Risolvi gli indovinelli. Se ti blocchi niente regali.</p>
+        <p><span><i class="fas fa-lightbulb"></i></span>No scherzo, puoi chiedere un suggerimento (ma solo uno per indovinello).</p>
+        <p><span><i class="fas fa-gift"></i></span> Ogni indovinello risolto rivelerà un regalino!</p>
+      </div>
+      <div><p>__________</p></div>
+      <div id="countdownTimer">5</div>
+      <button id="startButton">Inizia <i class="fas fa-heart"></i></button>
+    </div>
+    
+    <!-- SCHERMATA DI GIOCO -->
+    <div id="gameScreen" class="screen">
+      <div id="questionContainer">
+        <p id="riddleText"></p>
+        <input type="text" id="answerInput" placeholder="Inserisci la risposta" autocomplete="off">
+        <br>
+        <button id="submitAnswer">Invia Risposta</button>
+        <button id="hintButton">Suggerimento <i class="fas fa-question-circle"></i></button>
+        <p id="hintText"></p>
+        <div id="complimentMessage"></div>
+      </div>
+      <!-- PROGRESS BAR IN FONDO -->
+      <div id="progressContainer">
+        <div id="progressBar">0%</div>
+      </div>
+      <!-- ICONE DI PROGRESSO COME PACCHI REGALO -->
+      <div id="progressIcons">
+        <div class="progressIcon" data-stage="0" data-content="🍫">
+          <div class="tooltip">Primo regalo misterioso</div>
+        </div>
+        <div class="progressIcon" data-stage="1" data-content="📷">
+          <div class="tooltip">Secondo regalo misterioso</div>
+        </div>
+        <div class="progressIcon" data-stage="2" data-content="🧸">
+          <div class="tooltip">Terzo regalo misterioso</div>
+        </div>
+        <div class="progressIcon" data-stage="3" data-content="💌">
+          <div class="tooltip">Quarto regalo misterioso</div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- SCHERMATA FINALE -->
+    <div id="finalScreen" class="screen">
+      <h1>Bravina dai, non me l'aspettavo!</h1>
+      <p>Hai svelato tutti gli indovinelli (complicatissimi) e scoperto ogni regalo.</p>
+      <div id="finalMessage">
+      Grazie per aver reso questi 6 mesi i più belli di sempre. Ti amo tansissimo. -Ale
+      </div>
+      <p>Questa caccia mi ha messo un pochino di fame... e a te?</p>
+      <button id="restartButton">Ricomincia <i class="fas fa-redo"></i></button>
+    </div>
+  </div>
+  
+  <script>
+    // Selezione degli elementi
+    const screens = {
+      welcome: document.getElementById('welcomeScreen'),
+      game: document.getElementById('gameScreen'),
+      final: document.getElementById('finalScreen')
+    };
+    const startButton = document.getElementById('startButton');
+    const submitButton = document.getElementById('submitAnswer');
+    const restartButton = document.getElementById('restartButton');
+    const hintButton = document.getElementById('hintButton');
+    const hintText = document.getElementById('hintText');
+    const countdownTimer = document.getElementById('countdownTimer');
+    const riddleText = document.getElementById('riddleText');
+    const answerInput = document.getElementById('answerInput');
+    const progressBar = document.getElementById('progressBar');
+    const progressIcons = document.querySelectorAll('.progressIcon');
+    const container = document.querySelector('.container');
+    const complimentMessage = document.getElementById('complimentMessage');
+    const bgCanvas = document.getElementById('bgCanvas');
+    const ctx = bgCanvas.getContext('2d');
+    
+    // Indovinelli meno complicati ma sempre romantici
+    const riddles = [
+  { 
+    question: "Sono al buio ma vedo tutto. Racchiudo ciò che copre e protegge. Nella mia dimora, tra strati ordinati (o disordinati), troverai ciò che ha l'involucro colorato ma l'interno scuro. Non è un frutto, ma si raccoglie. Non è liquido, ma può sciogliersi. Cosa nascondo?", 
+    answer: "cioccolatini", 
+    hint: "Rettangolo artificiale che ingoia quotidianamente ciò che ricopre l'epidermide. La sua apertura rivela un vuoto organizzato in strati orizzontali.",
+    location: "armadio",
+    compliment: "Troppo difficile eh? Bravissima, ti sei guadagnata anche 10 bacini!"
+  },
+  { 
+    question: "Il custode del riposo racchiude qualcosa di speciale, un momento che non scorre più. Non è un racconto, ma narra storie. Non è vivo, ma conserva la vita. Questo frammento di memoria non sbiadisce. Cosa sono?", 
+    answer: "foto", 
+    hint: "Un prisma deformato la cui superficie labile segna il confine sottile tra la veglia e il mistero della notte",
+    location: "cuscino",
+    compliment: "Perfetto! Niente bacini questa volta, rendiamo la caccia più difficile!"
+  },
+  { 
+    question: "Il contenitore dalle molte tasche ha accolto un intruso. Non è un indumento, non è un accessorio, eppure occupa spazio. Ha occhi che non vedono e corpo che non sente. Cosa ti attende?", 
+    answer: "peluche", 
+    hint: "Ha delle ruote e delle maniglie",
+    location: "valigia",
+    compliment: "Ora Sassy ha un nuovo amico! Complimenti, ti sei guadagnata anche un bel massaggio!"
+  },
+  { 
+    question: "Sono al riparo dalla luce, un custode silente di parole e amore. Tra le luci dell'arena e l'eco dei colpi, tre lettere racchiudono l'arte di fondere tecnica, forza e strategia. Non è solo una lotta, ma l'unione di discipline antiche e moderne. Cosa rappresento?", 
+    answer: "lettera", 
+    hint: "L'inchiostro narra storie d'amore a chi sa leggere tra le righe.",
+    location: "borsone",
+    compliment: "Ce ne hai messo. "
+  }
+];
+    
+    let currentRiddle = 0;
+    let countdown = 5;
+    let hintsUsed = [false, false, false, false];
+    
+    // Mostra la schermata richiesta
+    function showScreen(screen) {
+      Object.values(screens).forEach(s => s.classList.remove('active'));
+      screen.classList.add('active');
+    }
+    
+    // Countdown iniziale
+    function startCountdown() {
+      countdownTimer.textContent = countdown;
+      let countdownInterval = setInterval(() => {
+        countdown--;
+        countdownTimer.textContent = countdown;
+        if (countdown <= 0) {
+          clearInterval(countdownInterval);
+          countdownTimer.style.display = 'none';
+          startButton.style.display = 'inline-block';
+          startButton.classList.add('animatePulse');
+        }
+      }, 1000);
+    }
+    
+    // Avvio del gioco
+    startButton.addEventListener('click', () => {
+      showScreen(screens.game);
+      loadRiddle();
+      updateProgressIcons();
+    });
+    
+    // Eventi per i pulsanti
+    answerInput.addEventListener('keyup', (event) => { if (event.key === 'Enter') checkAnswer(); });
+    submitButton.addEventListener('click', checkAnswer);
+    hintButton.addEventListener('click', showHint);
+    
+    restartButton.addEventListener('click', () => {
+  // Mostra un messaggio in un box
+  const messageBox = document.createElement('div');
+  messageBox.style.padding = '15px';
+  messageBox.style.margin = '15px auto';
+  messageBox.style.backgroundColor = 'rgba(210, 54, 105, 0.1)';
+  messageBox.style.borderRadius = '10px';
+  messageBox.style.color = '#d23669';
+  messageBox.style.fontWeight = '600';
+  messageBox.style.fontSize = '1.1em';
+  messageBox.style.border = '1px solid #d23669';
+  messageBox.style.textAlign = 'center';
+  messageBox.style.maxWidth = '80%';
+  messageBox.textContent = "Oh, i regali sono finiti, quante ne vuoi";
+  
+  // Inserisci il messaggio prima del pulsante
+  finalScreen.insertBefore(messageBox, restartButton);
+  
+  // Rimuovi il messaggio dopo 5 secondi
+  setTimeout(() => {
+    finalScreen.removeChild(messageBox);
+    
+    // Procedi con il resto del codice di reset
+    currentRiddle = 0;
+    hintsUsed = [false, false, false, false];
+    progressBar.style.width = '0%';
+    progressBar.textContent = "0%";
+    updateProgressIcons();
+    hintText.style.display = 'none';
+    complimentMessage.style.display = 'none';
+    showScreen(screens.welcome);
+    countdown = 5;
+    countdownTimer.style.display = 'block';
+    startCountdown();
+    
+    // Reset delle icone di progresso
+    progressIcons.forEach(icon => {
+      icon.classList.remove('revealed');
+      icon.classList.remove('current');
+    });
+  }, 5000);
+});
+    
+    // Carica l'indovinello corrente
+    function loadRiddle() {
+      if (currentRiddle < riddles.length) {
+        riddleText.textContent = riddles[currentRiddle].question;
+        answerInput.value = "";
+        answerInput.focus();
+        hintText.style.display = 'none';
+        complimentMessage.style.display = 'none';
+        hintButton.disabled = hintsUsed[currentRiddle];
+        hintButton.innerHTML = hintsUsed[currentRiddle] ? "Suggerimento usato <i class='fas fa-check'></i>" : "Suggerimento <i class='fas fa-question-circle'></i>";
+        
+        // Evidenzia l'indovinello corrente
+        progressIcons.forEach((icon, index) => {
+          icon.classList.remove('current');
+          if (index === currentRiddle) {
+            icon.classList.add('current');
+          }
+        });
+      } else {
+        showScreen(screens.final);
+        confetti({
+          particleCount: 150,
+          spread: 100,
+          origin: { y: 0.6 }
+        });
+        
+        // Effetto cascata di confetti multipli
+        setTimeout(() => {
+          confetti({
+            particleCount: 100,
+            angle: 60,
+            spread: 70,
+            origin: { x: 0 }
+          });
+        }, 500);
+        
+        setTimeout(() => {
+          confetti({
+            particleCount: 100,
+            angle: 120,
+            spread: 70,
+            origin: { x: 1 }
+          });
+        }, 1000);
+      }
+    }
+    
+    // Mostra un suggerimento per l'indovinello corrente
+    function showHint() {
+      if (!hintsUsed[currentRiddle]) {
+        hintText.textContent = riddles[currentRiddle].hint;
+        hintText.style.display = 'block';
+        hintsUsed[currentRiddle] = true;
+        hintButton.disabled = true;
+        hintButton.innerHTML = "Suggerimento usato <i class='fas fa-check'></i>";
+      }
+    }
+    
+    // Verifica la risposta inserita
+    function checkAnswer() {
+      const userAnswer = answerInput.value.trim().toLowerCase();
+      const correctAnswer = riddles[currentRiddle].answer;
+      
+      if (userAnswer === correctAnswer) {
+        // Animazione container
+        container.classList.add('correct-answer-animation');
+        setTimeout(() => {
+          container.classList.remove('correct-answer-animation');
+        }, 1500);
+        
+        // Mostra il messaggio di complimento
+        complimentMessage.textContent = riddles[currentRiddle].compliment;
+        complimentMessage.style.display = 'block';
+        
+        // Rivela l'icona del regalo
+        revealGift(currentRiddle);
+        
+        // Aggiorna la progress bar
+        updateProgress();
+        
+        // Avanza all'indovinello successivo
+        currentRiddle++;
+        
+        // Aggiorna le icone di progresso
+        updateProgressIcons();
+        
+        // Carica il prossimo indovinello dopo un breve ritardo
+        setTimeout(loadRiddle, 6000);
+      } else {
+        // Animazione errore
+        answerInput.classList.add('wrong-answer-animation');
+        container.classList.add('wrong-answer-animation');
+        setTimeout(() => {
+          answerInput.classList.remove('wrong-answer-animation');
+          container.classList.remove('wrong-answer-animation');
+        }, 600);
+      }
+    }
+    
+    // Rivela il regalo corrispondente all'indovinello risolto
+    function revealGift(riddleIndex) {
+      const giftIcon = document.querySelector(`.progressIcon[data-stage="${riddleIndex}"]`);
+      
+      // Anima e rivela l'icona
+      giftIcon.classList.add('revealed');
+      
+      // Mini confetti localizzati sull'icona
+      const rect = giftIcon.getBoundingClientRect();
+      const x = (rect.left + rect.width / 2) / window.innerWidth;
+      const y = (rect.top + rect.height / 2) / window.innerHeight;
+      
+      confetti({
+        particleCount: 30,
+        startVelocity: 20,
+        spread: 360,
+        origin: { x, y }
+      });
+    }
+    
+    // Aggiorna la progress bar con percentuale
+    function updateProgress() {
+      const progressPercent = Math.round(((currentRiddle + 1) / riddles.length) * 100);
+      progressBar.style.width = progressPercent + '%';
+      progressBar.textContent = progressPercent + '%';
+    }
+    
+    // Aggiorna le icone della progressione
+    function updateProgressIcons() {
+      progressIcons.forEach((icon, index) => {
+        // Rimuovi la classe current da tutte le icone
+        icon.classList.remove('current');
+        
+        // Aggiungi la classe rivelata per gli indovinelli già risolti
+        if (index < currentRiddle) {
+          icon.classList.add('revealed');
+        }
+        
+        // Aggiungi la classe corrente all'indovinello attuale
+        if (index === currentRiddle) {
+          icon.classList.add('current');
+        }
+      });
+    }
+    
+    // Imposta il canvas di sfondo
+    function resizeCanvas() { 
+      bgCanvas.width = window.innerWidth; 
+      bgCanvas.height = window.innerHeight; 
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+    
+    // Cuori fluttuanti per lo sfondo (migliorati)
+    let hearts = [];
+    function createHeart() {
+      return {
+        x: Math.random() * bgCanvas.width,
+        y: bgCanvas.height + Math.random() * 100,
+        size: Math.random() * 15 + 10,
+        speed: Math.random() * 1.5 + 0.5,
+        angle: Math.random() * Math.PI * 2,
+        rotationSpeed: (Math.random() - 0.5) * 0.05,
+        alpha: Math.random() * 0.5 + 0.5,
+        color: `rgba(255, ${Math.floor(Math.random() * 100)}, ${Math.floor(Math.random() * 150)}, ${Math.random() * 0.5 + 0.5})` // Variazioni di rosso e rosa
+      };
+    }
+    for (let i = 0; i < 50; i++) { hearts.push(createHeart()); }
+    
+    function updateHearts() {
+      for (let i = 0; i < hearts.length; i++) {
+        let heart = hearts[i];
+        heart.y -= heart.speed;
+        heart.angle += heart.rotationSpeed;
+        heart.alpha -= 0.001;
+        if (heart.alpha <= 0 || heart.y < -heart.size) { hearts[i] = createHeart(); }
+      }
+    }
+    
+    function drawHearts() {
+      ctx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+      for (let i = 0; i < hearts.length; i++) {
+        let heart = hearts[i];
+        ctx.save();
+        ctx.globalAlpha = heart.alpha;
+        ctx.translate(heart.x, heart.y);
+        ctx.rotate(heart.angle);
+        ctx.fillStyle = "#ff5e6c";
+        ctx.beginPath();
+        ctx.moveTo(0, heart.size / 2);
+        ctx.bezierCurveTo(heart.size / 2, 0, heart.size, heart.size / 2, 0, heart.size);
+        ctx.bezierCurveTo(-heart.size, heart.size / 2, -heart.size / 2, 0, 0, heart.size / 2);
+        ctx.fill();
+        ctx.restore();
+      }
+    }
+    
+    function animateHearts() { updateHearts(); drawHearts(); requestAnimationFrame(animateHearts); }
+    animateHearts();
+    
+    // Avvio istruzioni integrate e countdown al caricamento
+    window.onload = function() {
+      updateProgressIcons();
+      startCountdown();
+    };
+  </script>
+</body>
+</html>
